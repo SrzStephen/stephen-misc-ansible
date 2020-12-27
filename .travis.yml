@@ -1,0 +1,8 @@
+language: python
+python:
+  - '3.6'
+install:
+  - pip install -r requirements.txt
+  - chmod u+x tests/test_playbooks_syntax.sh
+script:
+  ./tests/test_playbooks_syntax.sh

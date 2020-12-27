@@ -68,7 +68,7 @@
 - name: install cudann
   apt:
     deb: "{{home_dir.stdout}}/cudann.deb"
-  become: True
+  become: true
   when: cudann_installed.stdout == ""
 
 - name: check if cudann-dev installed
@@ -92,7 +92,7 @@
 - name: install cudann dev
   apt:
     deb: "{{home_dir.stdout}}/cudann-dev.deb"
-  become: True
+  become: true
   when: cudann_dev_installed.stdout == ""
 
 
