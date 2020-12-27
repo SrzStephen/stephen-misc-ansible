@@ -1,0 +1,4 @@
+- hosts: cuda_ml
+  tasks:
+    - include: ../roles/ml.yml
+    - include: ../roles/test_tensorflow.yml

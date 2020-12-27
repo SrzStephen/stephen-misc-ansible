@@ -1,0 +1,49 @@
+- name: get home dir
+  shell: echo "{{ lookup('env', 'HOME') }}"
+  register: home_dir
+
+- name: install requirements
+  apt:
+    pkg:
+      - gcc
+      - python3-pip
+    update_cache: yes
+    state: present
+  become: true
+
+- name: install virtualenv
+  pip:
+    name: virtualenv
+    executable: pip3
+
+- name: Install virtualenv as root
+  pip:
+    name: virtualenv
+    executable: pip3
+  become: yes
+
+- name: check tensorflow test file exists
+  stat:
+    path: "/tmp/tensortest.py"
+  register: tensortest_exists
+
+- name: copy tensorflow test file
+  copy:
+    src: "static/tensortest.py"
+    dest: "/tmp/tensortest.py"
+    mode: "u+rw"
+  when: tensortest_exists.stat.exists == false
+
+- name: pip install tensorflow test
+  pip:
+    virtualenv: /tmp/tensortestenv
+    virtualenv_python: python3
+    name: tensorflow==2.3.0
+
+- name: run tensorflow script
+  shell: /tmp/tensortestenv/bin/python /tmp/tensortest.py
+  environment:
+    LD_LIBRARY_PATH: ${LD_LIBRARY_PATH}:/usr/local/cuda/lib64:/usr/local/cuda/include
+    PATH: /usr/local/cuda-10.1/bin${PATH:+:${PATH}}
+  register: tensortest_output
+

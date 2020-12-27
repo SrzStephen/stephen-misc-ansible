@@ -1,0 +1,148 @@
+- name: add nvidia graphics driver repo
+  apt_repository:
+    repo: "ppa:graphics-drivers"
+    state: present
+  become: true
+
+- name: install nvidia driver
+  apt:
+    pkg:
+      - nvidia-driver-455
+    update_cache: yes
+    state: present
+    install_recommends: no
+  become: true
+
+- name: install other dependencies
+  apt:
+    pkg:
+      - gcc
+      - python3-pip
+    update_cache: yes
+    state: present
+  become: true
+
+- name: get home dir
+  shell: echo "{{ lookup('env', 'HOME') }}"
+  register: home_dir
+
+- name: check if cuda installed
+  stat:
+    path: "/usr/local/cuda-10.1/"
+  register: cuda_dir
+
+- name: check if cuda run file downloaded
+  stat:
+    path: "{{home_dir.stdout}}/cuda.run"
+  register: cuda_file
+
+- name: download cuda
+  get_url:
+    url: "https://developer.download.nvidia.com/compute/cuda/10.1/Prod/local_installers/cuda_10.1.243_418.87.00_linux.run"
+    dest: "{{home_dir.stdout}}/cuda.run"
+  when: cuda_dir.stat.exists == False and cuda_file.stat.exists == False
+
+- name: install cuda
+  shell: sh {{home_dir.stdout}}/cuda.run --silent --toolkit --librarypath=/usr/local/cuda-10.1 --override
+  become: true
+  when: cuda_dir.stat.exists == False
+
+- name: check if cudann installed
+  shell: dpkg-query -W 'libcudnn7' 2>/dev/null
+  register: cudann_installed
+  ignore_errors: yes
+
+- name: check if cudann downloaded
+  stat:
+    path: "{{home_dir.stdout}}/cudann.deb"
+  register: cudan_file
+
+- name: copy cudnn deb
+  copy:
+    src: "static/libcudnn7_7.6.5.32-1+cuda10.1_amd64.deb"
+    dest: "{{home_dir.stdout}}/cudann.deb"
+    mode: "u+rw"
+    remote_src: no
+  when: cuda_file.stat.exists == false and cudann_installed.stdout == ""
+
+- name: install cudann
+  apt:
+    deb: "{{home_dir.stdout}}/cudann.deb"
+  become: True
+  when: cudann_installed.stdout == ""
+
+- name: check if cudann-dev installed
+  shell: dpkg-query -W 'libcudnn7-dev' 2>/dev/null
+  register: cudann_dev_installed
+  ignore_errors: yes
+
+- name: check if cudanndev downloaded
+  stat:
+    path: "{{home_dir.stdout}}/cudann-dev.deb"
+  register: cudanndev_file
+
+- name: copy cudnn-dev deb
+  copy:
+    src: "static/libcudnn7-dev_7.6.5.32-1+cuda10.1_amd64.deb"
+    dest: "{{home_dir.stdout}}/cudann-dev.deb"
+    mode: "u+rw"
+    remote_src: no
+  when: cudanndev_file.stat.exists == false and cudann_dev_installed.stdout==""
+
+- name: install cudann dev
+  apt:
+    deb: "{{home_dir.stdout}}/cudann-dev.deb"
+  become: True
+  when: cudann_dev_installed.stdout == ""
+
+
+- name: check if cudann headers exists
+  stat:
+    path: "/usr/local/cuda-10.1/include/cudnn.h"
+  register: cudnn_lib
+
+- name: check if cudann file already on computer
+  stat:
+    path: "{{home_dir.stdout}}/cudann.tgz"
+  register: cudann_file
+
+- name: copy cuann
+  copy:
+    src: "static/cudnn-10.1-linux-x64-v7.6.5.32.tgz"
+    dest: "{{home_dir.stdout}}/cudann.tgz"
+    mode: "u+rw"
+    remote_src: no
+  when: cudnn_lib.stat.exists == False and cudann_file.stat.exists == False
+
+- name: extract cudnn to cuda directory
+  unarchive:
+    src: "{{home_dir.stdout}}/cudann.tgz"
+    dest: "/usr/local/"
+    remote_src: yes # Can avoid copying entirely, worth looking into
+    mode: "a+r"
+  become: true
+  when: cudnn_lib.stat.exists == False
+
+- name: add LD Library path
+  lineinfile:
+    path: "{{home_dir.stdout}}/.bashrc"
+    state: present
+    line: export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/usr/local/cuda/lib64:/usr/local/cuda/include
+
+- name: add cuda bin to path
+  lineinfile:
+    path: "{{home_dir.stdout}}/.bashrc"
+    state: present
+    line: export PATH=/usr/local/cuda-10.1/bin${PATH:+:${PATH}}
+
+- name: Remove graphical login installed by the nvidia driver
+  apt:
+    pkg:
+      - gdm
+    state: absent
+  become: true
+
+- name: Reboot #TODO: Only restart if debs changed or cudnn files moved
+  reboot:
+    reboot_timeout: 120
+  become: true
