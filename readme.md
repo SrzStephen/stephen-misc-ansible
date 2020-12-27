@@ -1,4 +1,6 @@
 # Ansible
+![travis ci badge](https://travis-ci.com/SrzStephen/stephen-misc-ansible.svg?branch=master)
+
 This repo is basically just somewhere for me to throw ansible playbooks and scripts that I've made.
 
 I'm expecting this to expand as I start automating some of the things I find myself doing.
