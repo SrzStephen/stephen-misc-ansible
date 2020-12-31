@@ -15,8 +15,9 @@ ansible-playbook playbooks/install_cuda_10.1.yml
 ```
 Installing Tensorflow + CUDA + CUDANN on linux can be [a pain](https://www.youtube.com/watch?v=_36yNWw_07g).
 
-This playbook automates the installation of this, since at the time [my usual favourite](This playbook automates the 
-installation of this, since at the time [my usual favourite](https://support.system76.com/articles/cuda/) wasn't playing nice with my system.
+This playbook automates the installation of this, since at the time 
+[my usual favourite way of installing cuda](https://support.system76.com/articles/cuda/) wasn't playing nice with my 
+system.
 
 Expects hosts to be defined in your inventory with a group```cuda_ml```, eg:
 ```yml
@@ -26,7 +27,19 @@ cuda_ml:
       ansible_host: 192.168.0.x
 ```
 Playbook was tested on Ubuntu Server 20.04 with a Nvidia 2070 GPU and will install everything needed for 
-```tensorflow==2.3.0```
+```tensorflow==2.3.0``` and validate that you install works properly with the GPU.
+
+### Setup
+Nvidia does not provide the CUDNN libraries in an easy distribute way. You will need to download them from 
+[Nvidias Developer Program](https://developer.nvidia.com/rdp/cudnn-download).
+
+You will need to get the following files and move them to /roles/static/
+```
+libcudnn7-dev_7.6.5.32-1+cuda10.1_amd64.deb
+libcudnn7_7.6.5.32-1+cuda10.1_amd64.deb
+cudnn-10.1-linux-x64-v7.6.5.32.tgz
+```
+
 
 #### Improvements:
 Ways that this can be improved:
